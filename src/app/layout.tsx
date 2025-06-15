@@ -15,14 +15,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={GeistSans.className}>
-      <body className="min-h-screen bg-black text-white">
-        <div className="mx-auto max-w-3xl px-4">
+      <body className="min-h-screen bg-gradient-to-b from-black via-gray-900 to-black text-white antialiased">
+        <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
           {children}
         </div>
         <Toaster
           position="bottom-center"
           toastOptions={{
-            className: "!bg-black !text-white !border !border-white/10",
+            className: "!bg-gray-900 !text-white !border !border-white/10 !rounded-xl !shadow-lg",
             duration: 2000,
           }}
         />
