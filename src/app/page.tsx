@@ -1,245 +1,240 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import QRCode from "qrcode";
 import { toast } from "react-hot-toast";
+import { QrCode, Copy, Check, Loader2, Download, Moon, Sun } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, QrCode, Sparkles, Copy, Check, Loader2, Zap, Wand2 } from "lucide-react";
+
+// Define types for component props to improve maintainability and readability
+interface ThemeToggleButtonProps {
+  darkMode: boolean;
+  setDarkMode: Dispatch<SetStateAction<boolean>>;
+}
+
+interface InputSectionProps {
+  content: string;
+  setContent: (content: string) => void;
+  copyToClipboard: () => Promise<void>;
+  isCopied: boolean;
+  generateQR: () => Promise<void>;
+  isGenerating: boolean;
+}
+
+interface QrCodeDisplayProps {
+  qrCode: string;
+  downloadQR: () => void;
+  darkMode: boolean;
+}
+
+// Reusable Theme Toggle Button Component
+const ThemeToggleButton = ({ darkMode, setDarkMode }: ThemeToggleButtonProps) => (
+  <button
+    className="fixed top-6 right-6 z-50 rounded-full p-3 bg-white/80 dark:bg-[#23272f]/80 border border-blue-100 dark:border-blue-800 shadow-lg hover:scale-110 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#00c2cb] dark:focus:ring-[#8b5cf6]"
+    onClick={() => setDarkMode((d: boolean) => !d)}
+    aria-label="Toggle dark mode"
+  >
+    {darkMode ? <Sun className="h-7 w-7 text-yellow-400" /> : <Moon className="h-7 w-7 text-purple-600" />}
+  </button>
+);
+
+// Reusable Input Section Component
+const InputSection = ({ content, setContent, copyToClipboard, isCopied, generateQR, isGenerating }: InputSectionProps) => (
+  <div className="w-full flex flex-col gap-4">
+    <div className="flex flex-col sm:flex-row gap-3 w-full">
+      <input
+        type="text"
+        value={content}
+        onChange={e => setContent(e.target.value)}
+        className="flex-1 rounded-xl border border-blue-200/60 dark:border-blue-700/60 bg-white/80 dark:bg-[#181c23]/80 shadow-inner focus:shadow-md px-5 py-4 text-lg sm:text-xl font-medium text-[#1a202c] dark:text-[#e2e8f0] placeholder-[#4a5568] dark:placeholder-[#a0aec0] focus:outline-none focus:ring-4 focus:ring-[#00c2cb]/40 dark:focus:ring-[#8b5cf6]/40 transition-all"
+        placeholder="Enter URL or text..."
+        disabled={isGenerating}
+        style={{ backdropFilter: 'blur(16px)' }}
+        aria-label="QR input"
+      />
+      <motion.button
+        whileTap={{ scale: 0.92 }}
+        whileHover={{ scale: 1.08 }}
+        onClick={copyToClipboard}
+        disabled={!content || isGenerating}
+        className="flex items-center justify-center rounded-xl bg-gradient-to-r from-[#e0e7ff] to-[#f0f7ff] dark:from-[#23272f] dark:to-[#23272f] border border-blue-200/60 dark:border-blue-800/60 text-purple-600 dark:text-teal-300 px-5 py-4 shadow-md hover:bg-blue-100/60 dark:hover:bg-[#23272f]/80 transition-all focus:outline-none focus:ring-2 focus:ring-[#00c2cb] dark:focus:ring-[#8b5cf6] disabled:opacity-50"
+        title="Copy input"
+        aria-label="Copy input"
+      >
+        {isCopied ? <Check className="h-6 w-6" /> : <Copy className="h-6 w-6" />}
+      </motion.button>
+    </div>
+    <motion.button
+      whileTap={{ scale: 0.97 }}
+      whileHover={{ scale: 1.03 }}
+      onClick={generateQR}
+      disabled={isGenerating}
+      className="mt-2 rounded-xl bg-gradient-to-r from-[#00c2cb] to-[#8b5cf6] dark:from-[#8b5cf6] dark:to-[#00c2cb] text-white font-bold px-8 py-4 shadow-lg hover:from-[#00a8af] hover:to-[#7f4be0] dark:hover:from-[#7f4be0] dark:hover:to-[#00a8af] transition-all focus:outline-none focus:ring-4 focus:ring-[#00c2cb]/60 dark:focus:ring-[#8b5cf6]/60 disabled:opacity-50 w-full text-lg sm:text-xl"
+      aria-label="Generate QR Code"
+    >
+      {isGenerating ? <Loader2 className="h-6 w-6 animate-spin inline-block mr-2" /> : <QrCode className="h-6 w-6 inline-block mr-2" />}
+      Generate QR Code
+    </motion.button>
+  </div>
+);
+
+// Reusable QR Code Display Component
+const QrCodeDisplay = ({ qrCode, downloadQR, darkMode }: QrCodeDisplayProps) => (
+  <div className="flex flex-col items-center gap-6 w-full">
+    <AnimatePresence mode="wait">
+      {qrCode ? (
+        <motion.div
+          key="qr"
+          initial={{ opacity: 0, scale: 0.7 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.7 }}
+          transition={{ duration: 0.5, ease: [0.2, 0.8, 0.4, 1] }}
+          className="rounded-3xl border-2 border-[#00c2cb]/30 dark:border-[#8b5cf6]/30 bg-white/80 dark:bg-[#181c23]/80 shadow-2xl p-4 sm:p-8 flex items-center justify-center w-full max-w-xs sm:max-w-md md:max-w-lg mx-auto"
+          style={{ backdropFilter: 'blur(18px)' }}
+        >
+          <motion.img
+            key={qrCode}
+            src={qrCode}
+            alt="Generated QR Code"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2, duration: 0.5, ease: [0.2, 0.8, 0.4, 1] }}
+            className="w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 object-contain drop-shadow-xl"
+          />
+        </motion.div>
+      ) : (
+        <motion.div
+          key="placeholder"
+          initial={{ opacity: 0, scale: 0.7 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.7 }}
+          transition={{ duration: 0.5, ease: [0.2, 0.8, 0.4, 1] }}
+          className="rounded-3xl border-2 border-[#00c2cb]/20 dark:border-[#8b5cf6]/20 bg-white/60 dark:bg-[#181c23]/60 shadow-xl p-4 sm:p-8 flex items-center justify-center w-full max-w-xs sm:max-w-md md:max-w-lg mx-auto"
+          style={{ backdropFilter: 'blur(18px)' }}
+        >
+          <QrCode className="w-32 h-32 sm:w-40 sm:h-40 text-[#00c2cb]/20 dark:text-[#8b5cf6]/20" />
+        </motion.div>
+      )}
+    </AnimatePresence>
+    {qrCode && (
+      <motion.button
+        whileTap={{ scale: 0.96 }}
+        whileHover={{ scale: 1.04 }}
+        onClick={downloadQR}
+        className="flex items-center gap-3 text-[#00c2cb] dark:text-[#8b5cf6] font-bold hover:underline mt-2 transition-all text-lg sm:text-xl"
+        aria-label="Download QR"
+      >
+        <Download className="h-7 w-7" /> Download QR
+      </motion.button>
+    )}
+  </div>
+);
 
 export default function Home() {
+  // State management for QR code content, generation, and dark mode
   const [content, setContent] = useState("");
   const [qrCode, setQrCode] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
 
+  // Function to generate the QR code based on current content
   const generateQR = async () => {
     if (!content.trim()) {
       toast.error("Please enter some text or URL to generate a QR code");
       return;
     }
 
-    setIsGenerating(true);
+    setIsGenerating(true); // Indicate that generation is in progress
     try {
       const dataUrl = await QRCode.toDataURL(content, {
-        errorCorrectionLevel: "H",
-        margin: 1,
-        width: 400,
-        color: { dark: "#fff", light: "#000" }
+        errorCorrectionLevel: "H", // High error correction level for better readability
+        margin: 2, // Minimal margin around the QR code
+        width: 400, // Fixed width for the QR code image
+        // Dynamic color based on dark mode
+        color: { dark: darkMode ? "#e2e8f0" : "#1a202c", light: darkMode ? "#1a202c" : "#f0f7ff" }
       });
       setQrCode(dataUrl);
-      toast.success("QR code generated successfully!");
+      toast.success("QR code generated!");
     } catch (error) {
-      toast.error("Failed to generate QR code. Please try again.");
+      console.error("QR generation error:", error); // Log error for debugging
+      toast.error("Failed to generate QR code.");
     } finally {
       setIsGenerating(false);
     }
   };
 
+  // Function to download the generated QR code
   const downloadQR = () => {
-    if (!qrCode) return;
+    if (!qrCode) return; // Only allow download if QR code exists
     const link = document.createElement("a");
     link.href = qrCode;
-    link.download = `qr-${Date.now()}.png`;
+    link.download = `qr-code-${Date.now()}.png`; // Unique filename for download
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     toast.success("QR code downloaded!");
   };
 
+  // Function to copy the input content to clipboard
   const copyToClipboard = async () => {
-    if (!content) return;
+    if (!content) return; // Only allow copy if content exists
     try {
       await navigator.clipboard.writeText(content);
-      setIsCopied(true);
+      setIsCopied(true); // Set copied state to show feedback
       toast.success("Copied to clipboard!");
-      setTimeout(() => setIsCopied(false), 2000);
+      setTimeout(() => setIsCopied(false), 2000); // Reset copied state after 2 seconds
     } catch (error) {
+      console.error("Copy to clipboard error:", error); // Log error for debugging
       toast.error("Failed to copy to clipboard");
     }
   };
 
-  // Handle keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-        e.preventDefault();
-        generateQR();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === "d" && qrCode) {
-        e.preventDefault();
-        downloadQR();
-      }
-      if (e.key === "Escape") {
-        setContent("");
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [content, qrCode]);
-
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 px-4 py-12">
-      {/* Animated background */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-1/4 top-1/4 h-[500px] w-[500px] animate-blob rounded-full bg-indigo-500/10 blur-3xl" />
-        <div className="absolute -right-1/4 bottom-1/4 h-[500px] w-[500px] animate-blob animation-delay-2000 rounded-full bg-blue-500/10 blur-3xl" />
-        <div className="absolute left-1/2 top-1/2 h-[500px] w-[500px] animate-blob animation-delay-4000 rounded-full bg-violet-500/10 blur-3xl" />
+    <div className={
+      `${darkMode ? "dark" : ""} min-h-screen min-w-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#eaf2ff] via-[#f5faff] to-[#eaf2ff] dark:from-[#0a111a] dark:via-[#1a202c] dark:to-[#0a111a] font-sans antialiased relative overflow-hidden`}
+      style={{ fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif' }}
+    >
+      {/* Animated background blobs for extra polish */}
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute -top-40 -left-40 w-[32rem] h-[32rem] bg-[#8b5cf6]/20 dark:bg-[#8b5cf6]/30 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob-slow" />
+        <div className="absolute -bottom-40 -right-40 w-[32rem] h-[32rem] bg-[#00c2cb]/20 dark:bg-[#00c2cb]/30 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob-slow animation-delay-2000" />
       </div>
-
+      {/* Fixed dark mode button */}
+      <ThemeToggleButton darkMode={darkMode} setDarkMode={setDarkMode} />
+      {/* Main Card */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative w-full max-w-4xl space-y-12 rounded-[2rem] border border-white/10 bg-gray-800/40 p-8 backdrop-blur-xl shadow-2xl md:p-12"
-        role="region"
-        aria-label="QR Code Generator"
+        initial={{ opacity: 0, scale: 0.96, y: 30 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: [0.2, 0.8, 0.4, 1] }}
+        className="relative z-10 w-full max-w-2xl flex flex-col justify-center items-center bg-white/60 dark:bg-[#181c23]/70 rounded-3xl shadow-2xl border border-blue-200/40 dark:border-blue-900/40 backdrop-blur-2xl px-4 sm:px-8 py-8 sm:py-12 gap-10 sm:gap-14 mx-2 my-8"
+        style={{ boxShadow: darkMode ? '0 25px 100px rgba(0,0,0,0.5)' : '0 25px 100px rgba(56,189,248,0.18)' }}
       >
-        <div className="text-center">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500/20 to-blue-500/20 px-4 py-1.5 text-sm text-white/80 backdrop-blur-sm"
-          >
-            <Wand2 className="h-4 w-4 text-indigo-400" />
-            <span>Magic QR Generation</span>
-          </motion.div>
-          
+        {/* Title */}
           <motion.h1 
-            initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: -30 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-5xl font-bold tracking-tight md:text-6xl"
+          transition={{ duration: 0.8, delay: 0.1, ease: [0.2, 0.8, 0.4, 1] }}
+          className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#00c2cb] via-[#8b5cf6] to-[#00c2cb] dark:from-[#8b5cf6] dark:via-[#00c2cb] dark:to-[#8b5cf6] drop-shadow-xl text-center mb-2"
           >
-            <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-blue-400 bg-clip-text text-transparent">
-              QR Generator
-            </span>
+          QR Magic
           </motion.h1>
-          
-          <p className="mt-4 text-lg text-white/70 md:text-xl">
-            Transform your ideas into beautiful QR codes instantly
-          </p>
-          
-          <div className="mt-6 flex items-center justify-center gap-3 text-sm text-white/50">
-            <kbd className="rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-medium backdrop-blur-sm">Ctrl</kbd>
-            <span>+</span>
-            <kbd className="rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-medium backdrop-blur-sm">Enter</kbd>
-            <span>to generate</span>
-          </div>
-        </div>
-
-        <div className="grid gap-12 md:grid-cols-2">
-          <div className="space-y-6">
-            <div className="relative group">
-              <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-indigo-500 to-blue-500 opacity-0 blur transition duration-1000 group-hover:opacity-75" />
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                onKeyDown={(e) => {
-                  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-                    e.preventDefault();
-                    generateQR();
-                  }
-                }}
-                className="relative h-44 w-full resize-none rounded-2xl border border-white/10 bg-gray-800/50 px-5 py-4 text-base placeholder-white/40 focus:border-white/20 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
-                placeholder="Enter text or URL... (Ctrl + Enter to generate)"
-                aria-label="QR code content"
-                disabled={isGenerating}
-              />
-              <div className="absolute right-4 top-4 flex gap-3">
-                <button
-                  onClick={copyToClipboard}
-                  className="rounded-xl p-2 text-white/40 hover:text-white/60 hover:bg-white/5 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                  aria-label="Copy to clipboard"
-                  disabled={!content || isGenerating}
-                >
-                  {isCopied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
-                </button>
-                <Sparkles className="h-5 w-5 text-indigo-400" />
-              </div>
-            </div>
-
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={generateQR}
-              disabled={isGenerating}
-              className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-500 to-blue-500 px-6 py-4 text-base font-medium text-white shadow-lg transition-all hover:shadow-indigo-500/25 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50"
-              aria-label={isGenerating ? "Generating QR code..." : "Generate QR code"}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-blue-600 opacity-0 transition-opacity group-hover:opacity-100" />
-              <div className="relative flex items-center gap-2">
-                {isGenerating ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <QrCode className="h-5 w-5" />
-                )}
-                {isGenerating ? "Generating..." : "Generate QR Code"}
-              </div>
-            </motion.button>
-          </div>
-
-          <div className="flex flex-col items-center justify-center">
-            <AnimatePresence mode="wait">
-              {qrCode ? (
-                <motion.div
-                  key="qr"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className="space-y-6"
-                >
-                  <div className="relative group">
-                    <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-indigo-500 to-blue-500 opacity-0 blur transition duration-1000 group-hover:opacity-75" />
-                    <div className="relative rounded-2xl bg-white p-4 shadow-xl">
-                      <img 
-                        src={qrCode} 
-                        alt="Generated QR Code" 
-                        className="h-48 w-48"
-                        loading="lazy"
-                      />
-                    </div>
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={downloadQR}
-                    className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-base font-medium hover:bg-white/10 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                    aria-label="Download QR code"
-                  >
-                    <Download className="h-5 w-5" />
-                    Download QR Code
-                  </motion.button>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="placeholder"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="relative group"
-                >
-                  <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-indigo-500 to-blue-500 opacity-0 blur transition duration-1000 group-hover:opacity-75" />
-                  <div className="relative flex h-48 w-48 items-center justify-center rounded-2xl border-2 border-dashed border-white/10 bg-white/5 text-sm text-white/40 backdrop-blur-sm"
-                    role="status"
-                    aria-label="QR code preview area"
-                  >
-                    {isGenerating ? (
-                      <div className="flex flex-col items-center gap-3">
-                        <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
-                        <span className="text-sm">Generating...</span>
-                      </div>
-                    ) : (
-                      <div className="text-center">
-                        <QrCode className="mx-auto mb-2 h-8 w-8 text-white/20" />
-                        <span>QR Code Preview</span>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
+        {/* Input Section */}
+        <InputSection
+          content={content}
+          setContent={setContent}
+          copyToClipboard={copyToClipboard}
+          isCopied={isCopied}
+          generateQR={generateQR}
+          isGenerating={isGenerating}
+        />
+        {/* QR Code Display */}
+        <QrCodeDisplay
+          qrCode={qrCode}
+          downloadQR={downloadQR}
+          darkMode={darkMode}
+        />
       </motion.div>
-    </main>
+    </div>
   );
 } 

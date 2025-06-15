@@ -10,6 +10,7 @@ const config: Config = {
     extend: {
       animation: {
         blob: "blob 7s infinite",
+        "blob-slow": "blob-slow 20s infinite",
         "fade-in": "fade-in 0.5s ease-out",
       },
       keyframes: {
@@ -22,6 +23,20 @@ const config: Config = {
           },
           "66%": {
             transform: "translate(-20px, 20px) scale(0.9)",
+          },
+          "100%": {
+            transform: "translate(0px, 0px) scale(1)",
+          },
+        },
+        "blob-slow": {
+          "0%": {
+            transform: "translate(0px, 0px) scale(1)",
+          },
+          "33%": {
+            transform: "translate(60px, -100px) scale(1.2)",
+          },
+          "66%": {
+            transform: "translate(-40px, 40px) scale(0.8)",
           },
           "100%": {
             transform: "translate(0px, 0px) scale(1)",
